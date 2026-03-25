@@ -32,3 +32,5 @@ The model is evaluated using two primary tasks:
 - `generate_sample_report.py`: Individual case study visualization.
 - `DATA_ACCESS.md`: Instructions for dataset acquisition and structure.
 - `requirements.txt`: Environment dependencies.
+
+You can find weight in https://reurl.cc/dp2lAy
