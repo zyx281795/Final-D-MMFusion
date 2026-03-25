@@ -1,4 +1,3 @@
-
 import os
 import pandas as pd
 import torch
@@ -65,17 +64,13 @@ def run_experiment():
     print(f"Starting Multi-modal Fusion Experiment on {device}...")
     df = pd.read_csv(METADATA_PATH).dropna(subset=['category', 'sample_image_path'])
     
-    # Simple Split
     indices = list(range(len(df)))
     random.shuffle(indices)
-    subset_indices = indices[:20] # Subset for demo
+    subset_indices = indices[:20]
     split = int(0.8 * len(subset_indices))
-    train_indices = subset_indices[:split]
-    test_indices = subset_indices[split:]
+    train_indices, test_indices = subset_indices[:split], subset_indices[split:]
     
-    train_df = df.iloc[train_indices]
-    test_df = df.iloc[test_indices]
-    
+    train_df, test_df = df.iloc[train_indices], df.iloc[test_indices]
     clip_proc = CLIPProcessor.from_pretrained("openai/clip-vit-base-patch32")
     bio_tok = AutoTokenizer.from_pretrained("dmis-lab/biobert-v1.1")
     
@@ -89,7 +84,6 @@ def run_experiment():
     print("Training phase...")
     for epoch in range(2):
         model.train()
-        total_loss = 0
         for batch in train_loader:
             optimizer.zero_grad()
             imgs = {k: v.to(device) for k, v in batch['images'].items()}
@@ -97,15 +91,18 @@ def run_experiment():
             labels = batch['label'].to(device)
             outputs = model(imgs, txts)
             loss = criterion(outputs, labels)
-            loss.backward()
-            optimizer.step()
-            total_loss += loss.item()
-        print(f"Epoch {epoch+1} Loss: {total_loss/len(train_loader):.4f}")
+            loss.backward(); optimizer.step()
+        print(f"Epoch {epoch+1} complete.")
+
+    # --- SAVE WEIGHTS ---
+    weight_path = "multimodal_fusion_model.pth"
+    # Only saving the classifier state to keep file size small (backbones are frozen)
+    torch.save(model.classifier.state_dict(), weight_path)
+    print(f"Successfully saved trained classifier weights to: {weight_path}")
 
     print("Evaluation phase...")
     model.eval()
-    correct = 0
-    total = 0
+    correct, total = 0, 0
     with torch.no_grad():
         for batch in test_loader:
             imgs = {k: v.to(device) for k, v in batch['images'].items()}
@@ -113,11 +110,9 @@ def run_experiment():
             labels = batch['label'].to(device)
             outputs = model(imgs, txts)
             _, predicted = torch.max(outputs, 1)
-            total += labels.size(0)
-            correct += (predicted == labels).sum().item()
+            total += labels.size(0); correct += (predicted == labels).sum().item()
     
     print(f"Classification Accuracy: {100 * correct / total:.2f}%")
-    print("Multi-modal experiment completed successfully.")
 
 if __name__ == "__main__":
     run_experiment()
