@@ -1,0 +1,19 @@
+# Data
+well-documented-alzheimers-dataset/
+*.csv
+*.xlsx
+*.nii
+*.png
+!evaluation_results.png
+!sample_case_report.png
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+.env
+
+# Model weights
+*.pth
+*.bin
